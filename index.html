@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crane Scene Viewer</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    :root {
+      --bg-0: #0f1216;
+      --bg-1: #1b222b;
+      --line: #2f3945;
+      --text: #e7edf5;
+      --muted: #a6b2c0;
+      --accent: #69b4ff;
+    }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background:
+        radial-gradient(1200px 700px at 15% 10%, #25384f 0%, transparent 55%),
+        radial-gradient(1000px 600px at 85% 90%, #1f2b39 0%, transparent 50%),
+        linear-gradient(150deg, var(--bg-0), var(--bg-1));
+      color: var(--text);
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .shell {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(4px);
+      background: rgba(15, 18, 22, 0.55);
+    }
+    .title {
+      font-size: 14px;
+      letter-spacing: 0.02em;
+    }
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      --poster-color: transparent;
+      background: transparent;
+    }
+    .controls {
+      position: fixed;
+      top: 56px;
+      right: 12px;
+      width: min(320px, calc(100vw - 24px));
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(15, 18, 22, 0.82);
+      backdrop-filter: blur(4px);
+      padding: 12px;
+      z-index: 10;
+    }
+    .controls h3 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      color: var(--text);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .row label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .row input[type="number"] {
+      width: 76px;
+      background: #11161c;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+    .row input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .value {
+      min-width: 52px;
+      text-align: right;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    button {
+      flex: 1;
+      border: 1px solid var(--line);
+      background: #121922;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:hover {
+      border-color: #4a5b70;
+    }
+    .hint {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(15, 18, 22, 0.66);
+    }
+    .hint b {
+      color: var(--accent);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="title">Crane Build Sequence</div>
+      <div class="meta">GLB • animation enabled • orbit camera</div>
+    </header>
+    <model-viewer
+      src="./crane_scene_web.glb"
+      alt="Crane assembly sequence"
+      camera-controls
+      auto-rotate
+      animation-name="*"
+      exposure="1"
+      shadow-intensity="0.8"
+      environment-image="neutral"
+      interaction-prompt="auto">
+    </model-viewer>
+  </div>
+  <aside class="controls">
+    <h3>Build Controls</h3>
+    <div class="row">
+      <label for="heightMeters">Final Height (m)</label>
+      <input id="heightMeters" type="number" min="0" max="9" step="0.1" value="9">
+    </div>
+    <div class="row">
+      <input id="heightRange" type="range" min="0" max="9" step="0.1" value="9">
+      <div class="value" id="heightValue">9.0m</div>
+    </div>
+    <div class="row">
+      <label for="speedRange">Build Speed</label>
+      <div class="value" id="speedValue">1.00x</div>
+    </div>
+    <div class="row">
+      <input id="speedRange" type="range" min="0.1" max="3" step="0.05" value="1">
+      <div></div>
+    </div>
+    <div class="btns">
+      <button id="playBtn" type="button">Play to Height</button>
+      <button id="resetBtn" type="button">Reset</button>
+    </div>
+  </aside>
+  <div class="hint"><b>Tip:</b> drag to orbit, scroll to zoom</div>
+  <script>
+    const viewer = document.querySelector("model-viewer");
+    const heightMetersInput = document.getElementById("heightMeters");
+    const heightRange = document.getElementById("heightRange");
+    const heightValue = document.getElementById("heightValue");
+    const speedRange = document.getElementById("speedRange");
+    const speedValue = document.getElementById("speedValue");
+    const playBtn = document.getElementById("playBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const FALLBACK_BUILD_HEIGHT_M = 9.0;
+    let maxBuildHeightM = FALLBACK_BUILD_HEIGHT_M;
+    let targetTime = 0;
+    let raf = null;
+
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    const hToProgress = (h) => clamp(h / maxBuildHeightM, 0, 1);
+
+    function setHeightBounds(maxMeters) {
+      const m = clamp(Number(maxMeters) || FALLBACK_BUILD_HEIGHT_M, 1, 120);
+      maxBuildHeightM = m;
+      const maxText = m.toFixed(1);
+      heightMetersInput.max = maxText;
+      heightRange.max = maxText;
+    }
+
+    function applySpeed(speed) {
+      const s = clamp(Number(speed) || 1, 0.1, 3);
+      if ("timeScale" in viewer) viewer.timeScale = s;
+      if ("playbackRate" in viewer) viewer.playbackRate = s;
+      speedValue.textContent = `${s.toFixed(2)}x`;
+    }
+
+    function syncHeightUI(h) {
+      const hh = clamp(Number(h) || 0, 0, maxBuildHeightM);
+      heightMetersInput.value = hh.toFixed(1);
+      heightRange.value = String(hh);
+      heightValue.textContent = `${hh.toFixed(1)}m`;
+      const d = Number(viewer.duration) || 0;
+      targetTime = d * hToProgress(hh);
+    }
+
+    function stopAtTarget() {
+      if (raf) cancelAnimationFrame(raf);
+      const tick = () => {
+        if (!viewer.duration || viewer.paused) return;
+        if (viewer.currentTime >= targetTime) {
+          viewer.currentTime = targetTime;
+          viewer.pause();
+          return;
+        }
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }
+
+    function resetPlayback() {
+      if (raf) cancelAnimationFrame(raf);
+      viewer.pause();
+      viewer.currentTime = 0;
+    }
+
+    viewer.addEventListener("load", () => {
+      // Data-driven max height from model dimensions (fallback to 9m).
+      let derivedMax = NaN;
+      try {
+        if (typeof viewer.getDimensions === "function") {
+          const dims = viewer.getDimensions();
+          if (dims && Number.isFinite(Number(dims.y))) {
+            derivedMax = Number(dims.y);
+          }
+        }
+      } catch (_) {}
+      if (!Number.isFinite(derivedMax) || derivedMax <= 0) {
+        const attrMax = Number(viewer.getAttribute("data-build-height-max"));
+        if (Number.isFinite(attrMax) && attrMax > 0) derivedMax = attrMax;
+      }
+      setHeightBounds(Number.isFinite(derivedMax) && derivedMax > 0 ? derivedMax : FALLBACK_BUILD_HEIGHT_M);
+      syncHeightUI(heightMetersInput.value);
+      applySpeed(speedRange.value);
+      resetPlayback();
+    });
+
+    heightMetersInput.addEventListener("input", (e) => syncHeightUI(e.target.value));
+    heightRange.addEventListener("input", (e) => syncHeightUI(e.target.value));
+    speedRange.addEventListener("input", (e) => applySpeed(e.target.value));
+
+    playBtn.addEventListener("click", () => {
+      if (!viewer.duration) return;
+      viewer.currentTime = 0;
+      viewer.play();
+      stopAtTarget();
+    });
+    resetBtn.addEventListener("click", resetPlayback);
+  </script>
+</body>
+</html>
