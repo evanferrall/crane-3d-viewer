@@ -215,7 +215,7 @@
       <div class="meta">GLB • animation enabled • orbit camera</div>
     </header>
     <model-viewer
-      src="./crane_scene_web_fast.glb"
+      src="./crane_scene_web_draco.glb"
       alt="Crane assembly sequence"
       camera-controls
       auto-rotate
@@ -279,9 +279,12 @@
     const debugCopyBtn = document.getElementById("debugCopyBtn");
     const debugClearBtn = document.getElementById("debugClearBtn");
     const loadingState = document.getElementById("loadingState");
+    const PRIMARY_MODEL_SRC = "./crane_scene_web_draco.glb";
+    const FALLBACK_MODEL_SRC = "./crane_scene_web.glb";
     let retriedWithFullModel = false;
     let debugOpen = new URLSearchParams(location.search).get("debug") === "1";
     let debugEntries = [];
+    let lastProgressPct = -1;
 
     const FALLBACK_BUILD_HEIGHT_M = 9.0;
     let maxBuildHeightM = FALLBACK_BUILD_HEIGHT_M;
@@ -416,8 +419,8 @@
     } catch (err) {
       addDebug("warn", "webgl probe failed", err?.message || String(err));
     }
-    probeAsset("./crane_scene_web_fast.glb");
-    probeAsset("./crane_scene_web.glb");
+    probeAsset(PRIMARY_MODEL_SRC);
+    probeAsset(FALLBACK_MODEL_SRC);
     renderDebug();
 
     viewer.addEventListener("load", () => {
@@ -448,8 +451,12 @@
     viewer.addEventListener("progress", (e) => {
       const p = Number(e?.detail?.totalProgress) || 0;
       if (p >= 1) return;
-      addDebug("info", "model progress", `${Math.round(p * 100)}%`);
-      loadingState.textContent = `Loading 3D model... ${Math.round(p * 100)}%`;
+      const pct = Math.round(p * 100);
+      if (pct !== lastProgressPct) {
+        lastProgressPct = pct;
+        addDebug("info", "model progress", `${pct}%`);
+      }
+      loadingState.textContent = `Loading 3D model... ${pct}%`;
     });
     viewer.addEventListener("error", (e) => {
       addDebug("error", "model-viewer error", {
@@ -459,9 +466,9 @@
       if (!retriedWithFullModel) {
         retriedWithFullModel = true;
         loadingState.style.display = "block";
-        loadingState.textContent = "Fast model failed, retrying with full model...";
+        loadingState.textContent = "Primary model failed, retrying with full model...";
         addDebug("warn", "fallback to full model");
-        viewer.src = "./crane_scene_web.glb";
+        viewer.src = FALLBACK_MODEL_SRC;
         return;
       }
       loadingState.textContent = "Model failed to load. Refresh and try again.";
