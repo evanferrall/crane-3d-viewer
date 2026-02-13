@@ -53,6 +53,18 @@
       --poster-color: transparent;
       background: transparent;
     }
+    .loading {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(15, 18, 22, 0.66);
+      z-index: 10;
+    }
     .controls {
       position: fixed;
       top: 56px;
@@ -143,7 +155,7 @@
       <div class="meta">GLB • animation enabled • orbit camera</div>
     </header>
     <model-viewer
-      src="./crane_scene_web.glb"
+      src="./crane_scene_web_fast.glb"
       alt="Crane assembly sequence"
       camera-controls
       auto-rotate
@@ -177,6 +189,7 @@
       <button id="resetBtn" type="button">Reset</button>
     </div>
   </aside>
+  <div class="loading" id="loadingState">Loading 3D model...</div>
   <div class="hint"><b>Tip:</b> drag to orbit, scroll to zoom</div>
   <script>
     const viewer = document.querySelector("model-viewer");
@@ -187,6 +200,7 @@
     const speedValue = document.getElementById("speedValue");
     const playBtn = document.getElementById("playBtn");
     const resetBtn = document.getElementById("resetBtn");
+    const loadingState = document.getElementById("loadingState");
 
     const FALLBACK_BUILD_HEIGHT_M = 9.0;
     let maxBuildHeightM = FALLBACK_BUILD_HEIGHT_M;
@@ -241,6 +255,7 @@
     }
 
     viewer.addEventListener("load", () => {
+      loadingState.style.display = "none";
       // Data-driven max height from model dimensions (fallback to 9m).
       let derivedMax = NaN;
       try {
@@ -259,6 +274,14 @@
       syncHeightUI(heightMetersInput.value);
       applySpeed(speedRange.value);
       resetPlayback();
+    });
+    viewer.addEventListener("progress", (e) => {
+      const p = Number(e?.detail?.totalProgress) || 0;
+      if (p >= 1) return;
+      loadingState.textContent = `Loading 3D model... ${Math.round(p * 100)}%`;
+    });
+    viewer.addEventListener("error", () => {
+      loadingState.textContent = "Model failed to load. Refresh and try again.";
     });
 
     heightMetersInput.addEventListener("input", (e) => syncHeightUI(e.target.value));
