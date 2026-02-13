@@ -206,6 +206,16 @@
     .debug-toggle-row button {
       width: 100%;
     }
+    .cam-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .cam-row button {
+      padding: 6px 8px;
+      font-size: 11px;
+    }
   </style>
 </head>
 <body>
@@ -218,7 +228,10 @@
       src="./crane_scene_web.glb"
       alt="Crane assembly sequence"
       camera-controls
-      auto-rotate
+      camera-target="-40m 5m 62m"
+      camera-orbit="38deg 68deg 170m"
+      min-camera-orbit="auto auto 8m"
+      max-camera-orbit="auto auto 450m"
       animation-name="*"
       exposure="1"
       shadow-intensity="0.8"
@@ -248,6 +261,11 @@
       <button id="playBtn" type="button">Play to Height</button>
       <button id="resetBtn" type="button">Reset</button>
     </div>
+    <div class="cam-row">
+      <button id="focusOverviewBtn" type="button">Overview</button>
+      <button id="focusTruckBtn" type="button">Truck</button>
+      <button id="focusModulesBtn" type="button">Modules</button>
+    </div>
     <div class="debug-toggle-row">
       <button id="debugToggleBtn" type="button">Show Debug</button>
     </div>
@@ -273,6 +291,9 @@
     const speedValue = document.getElementById("speedValue");
     const playBtn = document.getElementById("playBtn");
     const resetBtn = document.getElementById("resetBtn");
+    const focusOverviewBtn = document.getElementById("focusOverviewBtn");
+    const focusTruckBtn = document.getElementById("focusTruckBtn");
+    const focusModulesBtn = document.getElementById("focusModulesBtn");
     const debugToggleBtn = document.getElementById("debugToggleBtn");
     const debugPanel = document.getElementById("debugPanel");
     const debugLines = document.getElementById("debugLines");
@@ -290,6 +311,11 @@
     let maxBuildHeightM = FALLBACK_BUILD_HEIGHT_M;
     let targetTime = 0;
     let raf = null;
+    const CAMERA_PRESETS = {
+      overview: { target: "-40m 5m 62m", orbit: "38deg 68deg 170m" },
+      truck: { target: "0m 2m -2m", orbit: "48deg 70deg 28m" },
+      modules: { target: "-76m 7m 127m", orbit: "42deg 70deg 34m" }
+    };
 
     const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
     const hToProgress = (h) => clamp(h / maxBuildHeightM, 0, 1);
@@ -377,6 +403,14 @@
       viewer.currentTime = 0;
     }
 
+    function applyCameraPreset(presetName) {
+      const p = CAMERA_PRESETS[presetName];
+      if (!p) return;
+      viewer.cameraTarget = p.target;
+      viewer.cameraOrbit = p.orbit;
+      addDebug("info", "camera preset", { preset: presetName, ...p });
+    }
+
     debugToggleBtn.addEventListener("click", () => {
       debugOpen = !debugOpen;
       renderDebug();
@@ -393,6 +427,9 @@
         addDebug("warn", "clipboard copy failed", err?.message || String(err));
       }
     });
+    focusOverviewBtn.addEventListener("click", () => applyCameraPreset("overview"));
+    focusTruckBtn.addEventListener("click", () => applyCameraPreset("truck"));
+    focusModulesBtn.addEventListener("click", () => applyCameraPreset("modules"));
 
     window.addEventListener("error", (e) => {
       addDebug("error", "window error", {
@@ -447,6 +484,7 @@
       syncHeightUI(heightMetersInput.value);
       applySpeed(speedRange.value);
       resetPlayback();
+      applyCameraPreset("overview");
     });
     viewer.addEventListener("progress", (e) => {
       const p = Number(e?.detail?.totalProgress) || 0;
