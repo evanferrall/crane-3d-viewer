@@ -13,6 +13,7 @@
       --text: #e7edf5;
       --muted: #a6b2c0;
       --accent: #69b4ff;
+      --mv-gain: 1;
     }
     html, body {
       margin: 0;
@@ -52,6 +53,7 @@
       height: 100%;
       --poster-color: transparent;
       background: transparent;
+      filter: brightness(var(--mv-gain));
     }
     .loading {
       position: fixed;
@@ -264,7 +266,7 @@
       <div class="value" id="exposureValue">0.62</div>
     </div>
     <div class="row">
-      <input id="exposureRange" type="range" min="0.2" max="1.2" step="0.01" value="0.62">
+      <input id="exposureRange" type="range" min="0" max="1.2" step="0.01" value="0.62">
       <div></div>
     </div>
     <div class="row">
@@ -272,7 +274,7 @@
       <div class="value" id="envValue">0.45</div>
     </div>
     <div class="row">
-      <input id="envRange" type="range" min="0.05" max="1.2" step="0.01" value="0.45">
+      <input id="envRange" type="range" min="0" max="1.2" step="0.01" value="0.45">
       <div></div>
     </div>
     <div class="row">
@@ -281,6 +283,14 @@
     </div>
     <div class="row">
       <input id="shadowRange" type="range" min="0" max="1.2" step="0.01" value="0.45">
+      <div></div>
+    </div>
+    <div class="row">
+      <label for="gainRange">Render Gain</label>
+      <div class="value" id="gainValue">1.00</div>
+    </div>
+    <div class="row">
+      <input id="gainRange" type="range" min="0" max="1" step="0.01" value="1">
       <div></div>
     </div>
     <div class="btns">
@@ -321,6 +331,8 @@
     const envValue = document.getElementById("envValue");
     const shadowRange = document.getElementById("shadowRange");
     const shadowValue = document.getElementById("shadowValue");
+    const gainRange = document.getElementById("gainRange");
+    const gainValue = document.getElementById("gainValue");
     const playBtn = document.getElementById("playBtn");
     const resetBtn = document.getElementById("resetBtn");
     const focusOverviewBtn = document.getElementById("focusOverviewBtn");
@@ -409,12 +421,12 @@
     function applyLighting(opts = {}) {
       const exposure = clamp(
         Number(opts.exposure ?? exposureRange.value ?? viewer.getAttribute("exposure") ?? 0.62),
-        0.2,
+        0,
         1.2
       );
       const environment = clamp(
         Number(opts.environmentIntensity ?? envRange.value ?? viewer.getAttribute("environment-intensity") ?? 0.45),
-        0.05,
+        0,
         1.2
       );
       const shadow = clamp(
@@ -422,17 +434,25 @@
         0,
         1.2
       );
+      const gain = clamp(
+        Number(opts.gain ?? gainRange.value ?? 1),
+        0,
+        1
+      );
 
       viewer.exposure = exposure;
       viewer.environmentIntensity = environment;
       viewer.shadowIntensity = shadow;
+      viewer.style.setProperty("--mv-gain", gain.toFixed(2));
 
       exposureRange.value = exposure.toFixed(2);
       envRange.value = environment.toFixed(2);
       shadowRange.value = shadow.toFixed(2);
+      gainRange.value = gain.toFixed(2);
       exposureValue.textContent = exposure.toFixed(2);
       envValue.textContent = environment.toFixed(2);
       shadowValue.textContent = shadow.toFixed(2);
+      gainValue.textContent = gain.toFixed(2);
     }
 
     function syncHeightUI(h) {
@@ -580,6 +600,7 @@
     exposureRange.addEventListener("input", () => applyLighting({ exposure: exposureRange.value }));
     envRange.addEventListener("input", () => applyLighting({ environmentIntensity: envRange.value }));
     shadowRange.addEventListener("input", () => applyLighting({ shadowIntensity: shadowRange.value }));
+    gainRange.addEventListener("input", () => applyLighting({ gain: gainRange.value }));
 
     playBtn.addEventListener("click", () => {
       if (!viewer.duration) return;
