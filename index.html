@@ -215,7 +215,7 @@
       <div class="meta">GLB • animation enabled • orbit camera</div>
     </header>
     <model-viewer
-      src="./crane_scene_web_draco.glb"
+      src="./crane_scene_web.glb"
       alt="Crane assembly sequence"
       camera-controls
       auto-rotate
@@ -279,8 +279,8 @@
     const debugCopyBtn = document.getElementById("debugCopyBtn");
     const debugClearBtn = document.getElementById("debugClearBtn");
     const loadingState = document.getElementById("loadingState");
-    const PRIMARY_MODEL_SRC = "./crane_scene_web_draco.glb";
-    const FALLBACK_MODEL_SRC = "./crane_scene_web.glb";
+    const PRIMARY_MODEL_SRC = "./crane_scene_web.glb";
+    const FALLBACK_MODEL_SRC = "./crane_scene_web_draco.glb";
     let retriedWithFullModel = false;
     let debugOpen = new URLSearchParams(location.search).get("debug") === "1";
     let debugEntries = [];
@@ -466,7 +466,7 @@
       if (!retriedWithFullModel) {
         retriedWithFullModel = true;
         loadingState.style.display = "block";
-        loadingState.textContent = "Primary model failed, retrying with full model...";
+        loadingState.textContent = "Primary model failed, retrying fallback model...";
         addDebug("warn", "fallback to full model");
         viewer.src = FALLBACK_MODEL_SRC;
         return;
