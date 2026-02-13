@@ -259,6 +259,30 @@
       <input id="speedRange" type="range" min="0.1" max="3" step="0.05" value="1">
       <div></div>
     </div>
+    <div class="row">
+      <label for="exposureRange">Exposure</label>
+      <div class="value" id="exposureValue">0.62</div>
+    </div>
+    <div class="row">
+      <input id="exposureRange" type="range" min="0.2" max="1.2" step="0.01" value="0.62">
+      <div></div>
+    </div>
+    <div class="row">
+      <label for="envRange">Environment</label>
+      <div class="value" id="envValue">0.45</div>
+    </div>
+    <div class="row">
+      <input id="envRange" type="range" min="0.05" max="1.2" step="0.01" value="0.45">
+      <div></div>
+    </div>
+    <div class="row">
+      <label for="shadowRange">Shadows</label>
+      <div class="value" id="shadowValue">0.45</div>
+    </div>
+    <div class="row">
+      <input id="shadowRange" type="range" min="0" max="1.2" step="0.01" value="0.45">
+      <div></div>
+    </div>
     <div class="btns">
       <button id="playBtn" type="button">Play to Height</button>
       <button id="resetBtn" type="button">Reset</button>
@@ -291,6 +315,12 @@
     const heightValue = document.getElementById("heightValue");
     const speedRange = document.getElementById("speedRange");
     const speedValue = document.getElementById("speedValue");
+    const exposureRange = document.getElementById("exposureRange");
+    const exposureValue = document.getElementById("exposureValue");
+    const envRange = document.getElementById("envRange");
+    const envValue = document.getElementById("envValue");
+    const shadowRange = document.getElementById("shadowRange");
+    const shadowValue = document.getElementById("shadowValue");
     const playBtn = document.getElementById("playBtn");
     const resetBtn = document.getElementById("resetBtn");
     const focusOverviewBtn = document.getElementById("focusOverviewBtn");
@@ -374,6 +404,35 @@
       if ("timeScale" in viewer) viewer.timeScale = s;
       if ("playbackRate" in viewer) viewer.playbackRate = s;
       speedValue.textContent = `${s.toFixed(2)}x`;
+    }
+
+    function applyLighting(opts = {}) {
+      const exposure = clamp(
+        Number(opts.exposure ?? exposureRange.value ?? viewer.getAttribute("exposure") ?? 0.62),
+        0.2,
+        1.2
+      );
+      const environment = clamp(
+        Number(opts.environmentIntensity ?? envRange.value ?? viewer.getAttribute("environment-intensity") ?? 0.45),
+        0.05,
+        1.2
+      );
+      const shadow = clamp(
+        Number(opts.shadowIntensity ?? shadowRange.value ?? viewer.getAttribute("shadow-intensity") ?? 0.45),
+        0,
+        1.2
+      );
+
+      viewer.exposure = exposure;
+      viewer.environmentIntensity = environment;
+      viewer.shadowIntensity = shadow;
+
+      exposureRange.value = exposure.toFixed(2);
+      envRange.value = environment.toFixed(2);
+      shadowRange.value = shadow.toFixed(2);
+      exposureValue.textContent = exposure.toFixed(2);
+      envValue.textContent = environment.toFixed(2);
+      shadowValue.textContent = shadow.toFixed(2);
     }
 
     function syncHeightUI(h) {
@@ -485,6 +544,7 @@
       setHeightBounds(Number.isFinite(derivedMax) && derivedMax > 0 ? derivedMax : FALLBACK_BUILD_HEIGHT_M);
       syncHeightUI(heightMetersInput.value);
       applySpeed(speedRange.value);
+      applyLighting();
       resetPlayback();
       applyCameraPreset("overview");
     });
@@ -517,6 +577,9 @@
     heightMetersInput.addEventListener("input", (e) => syncHeightUI(e.target.value));
     heightRange.addEventListener("input", (e) => syncHeightUI(e.target.value));
     speedRange.addEventListener("input", (e) => applySpeed(e.target.value));
+    exposureRange.addEventListener("input", () => applyLighting({ exposure: exposureRange.value }));
+    envRange.addEventListener("input", () => applyLighting({ environmentIntensity: envRange.value }));
+    shadowRange.addEventListener("input", () => applyLighting({ shadowIntensity: shadowRange.value }));
 
     playBtn.addEventListener("click", () => {
       if (!viewer.duration) return;
